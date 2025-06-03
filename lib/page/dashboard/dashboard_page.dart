@@ -25,7 +25,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     // ดึงข้อมูลผู้ใช้ที่ Login เข้ามา
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final String? accessToken = authProvider.loggedInUser?.accessToken;
+    // final String? accessToken = authProvider.loggedInUser?.accessToken;
 
     return Scaffold(
       appBar: AppBar(

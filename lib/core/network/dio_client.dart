@@ -23,10 +23,10 @@ class DioClient {
         onReceiveProgress: onReceiveProgress,
       );
       return response;
-    } on DioException catch (e) {
+    } on DioException {
       // จัดการข้อผิดพลาดจาก Dio
       // สามารถปรับปรุงการจัดการข้อผิดพลาดได้ละเอียดขึ้น
-      throw e;
+      rethrow;
     }
   }
 
@@ -51,8 +51,8 @@ class DioClient {
         onReceiveProgress: onReceiveProgress,
       );
       return response;
-    } on DioException catch (e) {
-      throw e;
+    } on DioException {
+      rethrow;
     }
   }
 
