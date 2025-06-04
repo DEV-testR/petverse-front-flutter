@@ -1,19 +1,20 @@
-// lib/presentation/pages/auth/login_page.dart
+// lib/presentation/pages/auth/login_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../components/loading_component.dart';
-import '../../providers/auth_provider.dart';
+import '../main.dart';
+import '../providers/auth_provider.dart';
+import '../widget/loading_component.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -26,6 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _doLogin() async {
+    logger.d('[BEGIN] _doLogin');
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final success = await authProvider.login(

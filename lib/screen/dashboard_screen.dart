@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../components/loading_component.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/dashboard_provider.dart';
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+import '../providers/auth_provider.dart';
+import '../providers/dashboard_provider.dart';
+import '../widget/loading_component.dart';
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
@@ -111,11 +111,11 @@ class _DashboardPageState extends State<DashboardPage> {
                               leading: CircleAvatar(
                                 backgroundColor: Theme.of(context).primaryColor,
                                 child: Text(
-                                  user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '',
+                                    (user.fullName != null && user.fullName!.isNotEmpty) ? user.fullName! : 'Empty Name',
                                   style: const TextStyle(color: Colors.white),
                                 ),
                               ),
-                              title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              title: Text((user.fullName != null && user.fullName!.isNotEmpty) ? user.fullName! : 'Empty Name', style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text(user.email),
                               trailing: Text('ID: ${user.id}'),
                               onTap: () {

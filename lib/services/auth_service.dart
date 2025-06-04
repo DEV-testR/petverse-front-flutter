@@ -1,22 +1,21 @@
 // lib/data/services/auth_service.dart
 import 'package:dio/dio.dart';
 
-import '../core/constants/api_constants.dart';
+import '../core/network/api_constants.dart';
 import '../core/network/dio_client.dart';
 import '../dto/auth_response.dart';
 import '../dto/login_request.dart';
+import '../main.dart';
 
 class AuthService {
   final DioClient _dioClient;
-
   AuthService(this._dioClient);
 
-  /// เมธอดสำหรับเรียก API เพื่อทำการ Login
-  /// จะคืนค่าเป็น AuthResponse ที่มี accessToken และ refreshToken เท่านั้น
-  Future<AuthResponse> login(LoginRequest request) async { // <<< เปลี่ยน Return Type
+  Future<AuthResponse> login(LoginRequest request) async {
     try {
+      logger.d('[BEGIN] AuthService.login');
       final response = await _dioClient.post(
-        ApiConstants.loginEndpoint,
+        '${ApiConstants.baseUrl}/auth/login',
         data: request.toJson(),
       );
 
@@ -29,7 +28,6 @@ class AuthService {
         );
       }
 
-      // แปลง JSON response กลับมาเป็น AuthResponse
       return AuthResponse.fromJson(response.data); // <<< ใช้ AuthResponse
     } on DioException catch (e) {
       String errorMessage = 'Failed to connect to the server.';

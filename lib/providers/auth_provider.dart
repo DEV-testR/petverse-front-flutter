@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart'; // อย่าล�
 
 import '../dto/auth_response.dart';
 import '../dto/login_request.dart';
+import '../main.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -21,6 +22,7 @@ class AuthProvider extends ChangeNotifier {
 
   // เมธอดสำหรับพยายาม Login อัตโนมัติ (เช่น เมื่อเปิดแอป)
   Future<void> autoLogin() async {
+    logger.d('[BEGIN] AuthProvider.autoLogin');
     _isLoading = true;
     notifyListeners(); // แจ้งเตือน UI ว่ากำลังโหลด
 
@@ -36,9 +38,10 @@ class AuthProvider extends ChangeNotifier {
           accessToken: accessToken,
           refreshToken: prefs.getString('refreshToken') ?? '', // ดึง refreshToken
         );
-        debugPrint('Auto-login successful with token: $accessToken');
+        logger.d('Auto-login successful with token: $accessToken');
       } else {
         _loggedInUser = null; // ไม่มี token แสดงว่ายังไม่ Login
+        logger.d('Auto-login Failed Token Not Found.');
       }
     } catch (e) {
       debugPrint('Auto-login failed: $e');
@@ -52,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
 
   // เมธอดสำหรับ Login
   Future<bool> login(String email, String password) async {
+    logger.d('[BEGIN] AuthProvider.login');
     _isLoading = true;
     _errorMessage = null; // เคลียร์ข้อผิดพลาดก่อนเริ่ม Login ใหม่
     notifyListeners(); // แจ้งเตือน UI ว่ากำลังโหลด

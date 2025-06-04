@@ -1,13 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:petverse_front_flutter/page/home/home_page.dart';
+import 'package:logger/logger.dart';
 import 'package:petverse_front_flutter/providers/auth_provider.dart';
 import 'package:petverse_front_flutter/providers/dashboard_provider.dart';
+import 'package:petverse_front_flutter/screen/home_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // สำหรับ SharedPreferences
 
 // ***** สำคัญมาก: ตรวจสอบและแก้ไขเส้นทางนี้ให้ถูกต้อง *****
 // สมมติว่า injector.dart อยู่ใน lib/injector.dart
 import 'package:petverse_front_flutter/injector.dart'; // <--- ต้องแน่ใจว่า import ถูกต้อง
+
+final logger = Logger(
+  printer: PrettyPrinter(),
+);
+
+final loggerNoStack = Logger(
+  printer: PrettyPrinter(methodCount: 0),
+);
 
 void main() async {
   // ตรวจสอบให้แน่ใจว่า Flutter Engine ถูกเตรียมพร้อมก่อนใช้งาน Native code (เช่น SharedPreferences)
@@ -28,6 +38,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kReleaseMode) {
+      Logger.level = Level.info;
+    }
+    else {
+      Logger.level = Level.debug;
+    }
+
+
     // ใช้ MultiProvider เพื่อให้ AuthProvider และ DashboardProvider พร้อมใช้งานทั่วทั้งแอป
     return MultiProvider(
       providers: [
@@ -56,7 +74,7 @@ class MyApp extends StatelessWidget {
         ),
         // กำหนด HomePage เป็นหน้าจอเริ่มต้นของแอปพลิเคชัน
         // HomePage จะจัดการการนำทางไปยัง Login หรือ Dashboard โดยอัตโนมัติ
-        home: const HomePage(),
+        home: const HomeScreen(),
         // ไม่ต้องใช้ routes หรือ initialRoute หาก HomePage ทำหน้าที่เป็น Router หลัก
       ),
     );

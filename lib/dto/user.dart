@@ -5,9 +5,9 @@ part 'user.g.dart';
 class User {
   final int id;
   final String email;
-  final String fullName;
+  final String? fullName; // <--- Change to nullable String
 
-  User({required this.id, required this.email, required this.fullName});
+  User({required this.id, required this.email, this.fullName}); // <--- Make fullName optional in constructor
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
