@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart';
+import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../widget/appcard_widget.dart';
 import '../widget/cardaction_widget.dart';
+import 'home_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,6 +22,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DashboardProvider>(context, listen: false).fetchUsers();
     });
+  }
+
+  void logout() async {
+    logger.d('[BEGIN] logout');
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.logout();
+
+      if (!mounted) {
+        logger.d('Widget unmounted after API call, stopping further operations.');
+        return; // ถ้า Widget ไม่อยู่ใน tree แล้ว ไม่ต้องทำอะไรต่อ
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(),
+        ),
+      );
+    } catch (e) {
+      logger.e('Error validating email: $e');
+    } finally {
+    }
   }
 
   @override
@@ -47,15 +74,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.white),
-            onPressed: () {},
+          // แทน IconButton ด้วย PopupMenuButton
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.settings, color: Colors.white), // ไอคอนตั้งค่า
+            onSelected: (String result) async {
+              if (result == 'logout') {
+                logout();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.black),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red), // ไอคอน logout
+                    SizedBox(width: 8),
+                    Text('Logout', style: TextStyle(color: Colors.red)), // ข้อความ logout
+                  ],
+                ),
+              ),
+            ],
+            offset: const Offset(0, 50), // ปรับตำแหน่ง Dropdown ให้ไม่ทับ AppBar
+            color: Colors.white, // สีพื้นหลังของ dropdown
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: 4,
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               backgroundColor: Colors.grey[300],
-              child: Icon(Icons.person, color: Colors.grey[700]), // รูปโปรไฟล์
+              child: Icon(Icons.person, color: Colors.grey[700]),
             ),
           ),
         ],
