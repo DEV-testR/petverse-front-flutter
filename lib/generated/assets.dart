@@ -17,6 +17,6 @@ class Assets {
   static const String screenLoginScreen = 'lib/screen/login_screen.dart';
   static const String servicesAuthService = 'lib/services/auth_service.dart';
   static const String servicesUserService = 'lib/services/user_service.dart';
-  static const String widgetLoadingComponent = 'lib/widget/loading_component.dart';
+  static const String widgetLoadingComponent = 'lib/widget/loading_widget.dart';
 
 }

@@ -1,17 +1,24 @@
-/*
 import 'package:flutter/material.dart';
+import 'package:petverse_front_flutter/main.dart';
 
-class BuildCard extends StatelessWidget {
-  const BuildCard({super.key});
+class AppCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String content;
+  final bool showViewAll;
+  final List<Widget>? buttons;
+
+  const AppCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.content,
+    this.showViewAll = false,
+    this.buttons,
+  });
 
   @override
-  Widget build({
-    required IconData icon,
-    required String title,
-    required String content,
-    bool showViewAll = false,
-    List<Widget>? buttons,
-  }) {
+  Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -56,10 +63,10 @@ class BuildCard extends StatelessWidget {
               content,
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
-            if (buttons != null && buttons.isNotEmpty) ...[
+            if (buttons != null && buttons!.isNotEmpty) ...[
               SizedBox(height: 16),
               Row(
-                children: buttons,
+                children: buttons!,
               ),
             ],
             if (showViewAll) ...[
@@ -67,7 +74,10 @@ class BuildCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    // TODO: Handle View all tap
+                    logger.d('View all for $title tapped!');
+                  },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -86,4 +96,4 @@ class BuildCard extends StatelessWidget {
       ),
     );
   }
-}*/
+}

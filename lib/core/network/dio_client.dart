@@ -68,8 +68,8 @@ class DioClient {
   }
 
   // === Methods ใช้งานหลัก ===
-  Future<Response> get(String path, {Options? options}) =>
-      _dio.get(path, options: options);
+  Future<Response> get(String path, {Options? options, Map<String, String>? queryParameters}) =>
+      _dio.get(path, options: options, queryParameters: queryParameters);
 
   Future<Response> post(String path, {data, Options? options}) =>
       _dio.post(path, data: data, options: options);

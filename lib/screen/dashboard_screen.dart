@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../widget/loading_component.dart';
+import '../widget/appcard_widget.dart';
+import '../widget/cardaction_widget.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -15,7 +16,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // เรียก fetchUsers เมื่อหน้า Dashboard ถูกสร้างขึ้น
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DashboardProvider>(context, listen: false).fetchUsers();
     });
@@ -23,117 +23,126 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ดึงข้อมูลผู้ใช้ที่ Login เข้ามา
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    // final String? accessToken = authProvider.loggedInUser?.accessToken;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
-        centerTitle: true,
+        backgroundColor: Colors.blue[800], // สีน้ำเงินเข้มตามรูป
+        elevation: 0,
+        title: Row(
+          children: [
+            Icon(
+              Icons.business_center, // หรือไอคอนที่คล้ายกับโลโก้
+              color: Colors.white,
+              size: 28,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Today',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Friday, June 6', // วันที่ปัจจุบัน
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+          ],
+        ),
         actions: [
-          // ปุ่ม Logout
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              // หลังจาก Logout แล้ว HomePage (Root widget) จะตรวจจับการเปลี่ยนแปลง
-              // ของ AuthProvider.isAuthenticated และนำทางกลับไปยัง LoginPage อัตโนมัติ
-            },
-            tooltip: 'ออกจากระบบ',
+            icon: Icon(Icons.settings, color: Colors.white),
+            onPressed: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: Colors.grey[300],
+              child: Icon(Icons.person, color: Colors.grey[700]), // รูปโปรไฟล์
+            ),
           ),
         ],
       ),
-      body: Consumer<DashboardProvider>(
-        builder: (context, dashboardProvider, child) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ยินดีต้อนรับ, N/A!',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'N/A',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'รายชื่อผู้ใช้จาก API:',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            AppCard(
+              icon: Icons.announcement,
+              title: 'Announcement',
+              content: 'No recent announcements',
+              showViewAll: true,
+            ),
+            AppCard(
+              icon: Icons.checklist,
+              title: 'Qbic',
+              content: 'No recent To Do',
+              showViewAll: true,
+            ),
+            AppCard(
+              icon: Icons.group,
+              title: 'Meet',
+              content: 'No upcoming meetings',
+              buttons: [
+                CardActionButton(text: '+ Join', color: Colors.red[400]!),
+                CardActionButton(text: '+ Create New', color: Colors.red[400]!),
+              ],
+              showViewAll: true,
+            ),
+            AppCard(
+              icon: Icons.calendar_today,
+              title: 'Webinar',
+              content: 'No upcoming webinars',
+              buttons: [
+                CardActionButton(text: '+ Create New', color: Colors.blue[400]!),
+              ],
+              showViewAll: true,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[200],
+                foregroundColor: Colors.grey[700],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
               ),
-              Expanded( // ใช้ Expanded เพื่อให้ ListView กินพื้นที่ที่เหลือ
-                child: Builder( // ใช้ Builder เพื่อให้ context พร้อมใช้งานภายใน
-                  builder: (context) {
-                    if (dashboardProvider.isLoading) {
-                      return const Center(child: LoadingIndicator()); // แสดง Loading Indicator
-                    } else if (dashboardProvider.errorMessage != null) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                dashboardProvider.errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.red, fontSize: 16),
-                              ),
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: () => dashboardProvider.fetchUsers(),
-                                child: const Text('ลองใหม่'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    } else if (dashboardProvider.users.isEmpty) {
-                      return const Center(child: Text('ไม่พบข้อมูลผู้ใช้')); // ถ้าไม่มีข้อมูล
-                    } else {
-                      // แสดงรายการผู้ใช้ใน ListView
-                      return ListView.builder(
-                        itemCount: dashboardProvider.users.length,
-                        itemBuilder: (context, index) {
-                          final user = dashboardProvider.users[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            elevation: 2,
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                child: Text(
-                                    (user.fullName != null && user.fullName!.isNotEmpty) ? user.fullName! : 'Empty Name',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              title: Text((user.fullName != null && user.fullName!.isNotEmpty) ? user.fullName! : 'Empty Name', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text(user.email),
-                              trailing: Text('ID: ${user.id}'),
-                              onTap: () {
-                                // TODO: Implement navigation to user detail page
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('คลิกที่ผู้ใช้: ${user.fullName}')),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      );
-                    }
-                  },
-                ),
+              child: Text(
+                'Reorder',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-            ],
-          );
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue[800],
+        unselectedItemColor: Colors.grey,
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star), // หรือไอคอนที่คล้ายกับในรูป
+            label: 'Today',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.email),
+            label: 'Message',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: 'Team',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.rss_feed),
+            label: 'Feed',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'More',
+          ),
+        ],
+        currentIndex: 0, // ตั้งค่าให้ Today เป็นอันที่เลือก
+        onTap: (index) {
+          // Handle navigation
         },
       ),
     );

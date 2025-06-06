@@ -9,18 +9,17 @@ import '../services/auth_service.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
-  AuthResponse? _loggedInUser;
+  AuthResponse? _authResponse;
   bool _isLoading = false;
   String? _errorMessage;
 
-  AuthResponse? get loggedInUser => _loggedInUser;
+  AuthResponse? get loggedInUser => _authResponse;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => _loggedInUser != null; // ตรวจสอบว่า Login แล้วหรือยัง
+  bool get isAuthenticated => _authResponse != null; // ตรวจสอบว่า Login แล้วหรือยัง
 
   AuthProvider(this._authService); // รับ auth_service.dart ผ่าน Constructor (จาก GetIt)
 
-  // เมธอดสำหรับพยายาม Login อัตโนมัติ (เช่น เมื่อเปิดแอป)
   Future<void> autoLogin() async {
     logger.d('[BEGIN] AuthProvider.autoLogin');
     _isLoading = true;
@@ -34,18 +33,18 @@ class AuthProvider extends ChangeNotifier {
         // ในแอปจริง: ควรจะส่ง token นี้ไปตรวจสอบกับ Backend
         // และดึงข้อมูลผู้ใช้กลับมา (เช่น user profile)
         // เพื่อความง่ายในตัวอย่างนี้ เราจะสร้าง LoginResponseDto สมมติขึ้นมา
-        _loggedInUser = AuthResponse(
+        _authResponse = AuthResponse(
           accessToken: accessToken,
           refreshToken: prefs.getString('refreshToken') ?? '', // ดึง refreshToken
         );
         logger.d('Auto-login successful with token: $accessToken');
       } else {
-        _loggedInUser = null; // ไม่มี token แสดงว่ายังไม่ Login
+        _authResponse = null; // ไม่มี token แสดงว่ายังไม่ Login
         logger.d('Auto-login Failed Token Not Found.');
       }
     } catch (e) {
       debugPrint('Auto-login failed: $e');
-      _loggedInUser = null;
+      _authResponse = null;
       _errorMessage = 'Auto-login failed. Please log in again.';
     } finally {
       _isLoading = false;
@@ -53,7 +52,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // เมธอดสำหรับ Login
   Future<bool> login(String email, String password) async {
     logger.d('[BEGIN] AuthProvider.login');
     _isLoading = true;
@@ -62,17 +60,17 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final request = LoginRequest(email: email, password: password);
-      _loggedInUser = await _authService.login(request); // เรียกใช้ Service
+      _authResponse = await _authService.login(request); // เรียกใช้ Service
 
       // เก็บ Token และข้อมูลผู้ใช้ลงใน SharedPreferences เมื่อ Login สำเร็จ
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('accessToken', _loggedInUser!.accessToken);
-      await prefs.setString('refreshToken', _loggedInUser!.refreshToken);
+      await prefs.setString('accessToken', _authResponse!.accessToken);
+      await prefs.setString('refreshToken', _authResponse!.refreshToken);
       return true; // Login สำเร็จ
     } catch (e) {
       _errorMessage = 'Login failed: ${e.toString()}'; // เก็บข้อความผิดพลาด
       debugPrint('Login Error: $e');
-      _loggedInUser = null; // เคลียร์สถานะผู้ใช้
+      _authResponse = null; // เคลียร์สถานะผู้ใช้
       return false; // Login ไม่สำเร็จ
     } finally {
       _isLoading = false;
@@ -80,12 +78,53 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // เมธอดสำหรับ Logout
+  Future<bool> loginWithPin(String email, String pin) async {
+    logger.d('[BEGIN] AuthProvider.login');
+    _isLoading = true;
+    _errorMessage = null; // เคลียร์ข้อผิดพลาดก่อนเริ่ม Login ใหม่
+    notifyListeners(); // แจ้งเตือน UI ว่ากำลังโหลด
+
+    try {
+      _authResponse = await _authService.loginWithPin(email, pin); // เรียกใช้ Service
+      // เก็บ Token และข้อมูลผู้ใช้ลงใน SharedPreferences เมื่อ Login สำเร็จ
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('accessToken', _authResponse!.accessToken);
+      await prefs.setString('refreshToken', _authResponse!.refreshToken);
+      return true; // Login สำเร็จ
+    } catch (e) {
+      _errorMessage = 'Login failed: ${e.toString()}'; // เก็บข้อความผิดพลาด
+      debugPrint('Login Error: $e');
+      _authResponse = null; // เคลียร์สถานะผู้ใช้
+      return false; // Login ไม่สำเร็จ
+    } finally {
+      _isLoading = false;
+      notifyListeners(); // แจ้งเตือน UI ว่าโหลดเสร็จสิ้น
+    }
+  }
+
+  Future<bool> validateEmail(String email) async {
+    logger.d('[BEGIN] AuthProvider.login');
+    // _isLoading = true;
+    // _errorMessage = null; // เคลียร์ข้อผิดพลาดก่อนเริ่ม Login ใหม่
+    // notifyListeners(); // แจ้งเตือน UI ว่ากำลังโหลด
+
+    try {
+      return await _authService.validateEmail(email); // เรียกใช้ Service
+    } catch (e) {
+      // _errorMessage = 'VerifilyEmail failed: ${e.toString()}'; // เก็บข้อความผิดพลาด
+      logger.d('VerifilyEmail Error: $e');
+      return false;
+    } finally {
+      // _isLoading = false;
+      // notifyListeners(); // แจ้งเตือน UI ว่าโหลดเสร็จสิ้น
+    }
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
     try {
-      _loggedInUser = null; // เคลียร์ข้อมูลผู้ใช้
+      _authResponse = null; // เคลียร์ข้อมูลผู้ใช้
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('accessToken'); // ลบ Token ออกจาก SharedPreferences
       await prefs.remove('refreshToken');
