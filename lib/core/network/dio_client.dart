@@ -88,10 +88,10 @@ class DioClient {
       // **สำคัญ**: สร้าง Dio instance ใหม่สำหรับการ refresh token โดยเฉพาะ
       // เพื่อป้องกันไม่ให้คำขอ refresh token วนกลับมาติด interceptor ตัวเอง
       // ซึ่งอาจทำให้เกิด loop ไม่สิ้นสุดหรือพฤติกรรมที่ไม่คาดคิดได้
-      final Dio _refreshDio = Dio();
+      final Dio refreshDio = Dio();
       // _refreshDio.options.baseUrl = 'http://localhost:48080'; // กำหนด base URL ถ้าจำเป็น
 
-      final response = await _refreshDio.post(
+      final response = await refreshDio.post(
         '${ApiConstants.baseUrl}/auth/refresh-token',
         data: {
           'refreshToken': refreshToken,
