@@ -2,38 +2,39 @@
 
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter/foundation.dart'; // Import for VoidCallback
 import 'package:petverse_front_flutter/providers/auth_provider.dart';
 import 'package:petverse_front_flutter/providers/dashboard_provider.dart';
 import 'package:petverse_front_flutter/services/auth_service.dart';
 import 'package:petverse_front_flutter/services/user_service.dart';
 
-import 'core/network/dio_client.dart'; // <<< เพิ่ม
+import 'core/network/dio_client.dart';
+import 'core/network/api_constants.dart'; // Ensure this path is correct for baseUrl
 
-final GetIt getIt = GetIt.instance; // <-- นี่คือตัวแปร getIt ที่ main.dart จะเข้าถึงได้
+final GetIt getIt = GetIt.instance;
 
-void setupLocator() {
+// Adjust setupLocator to receive onAuthErrorRedirectToPin callback
+void setupLocator({required VoidCallback onAuthError}) {
   // Register Dio (HTTP Client library)
-  getIt.registerLazySingleton<Dio>(() => Dio());
+  // Ensure BaseOptions with baseUrl are set here for all Dio requests
+  getIt.registerLazySingleton<Dio>(() => Dio(BaseOptions(baseUrl: ApiConstants.baseUrl)));
 
   // Register DioClient (your custom wrapper for Dio)
-  // ให้ DioClient ใช้ Dio instance ที่ถูก register ไว้
-  getIt.registerLazySingleton<DioClient>(() => DioClient(getIt()));
+  // Pass the Dio instance and the onAuthErrorRedirectToPin callback
+  getIt.registerLazySingleton<DioClient>(
+          () => DioClient(getIt<Dio>(), onAuthError: onAuthError));
 
   // Register AuthService (handles authentication API calls)
-  // ให้ AuthService ใช้ DioClient instance ที่ถูก register ไว้
-  getIt.registerLazySingleton<AuthService>(() => AuthService(getIt()));
+  getIt.registerLazySingleton<AuthService>(() => AuthService(getIt<DioClient>()));
 
   // Register UserService (handles user data API calls)
-  // ให้ UserService ใช้ DioClient instance ที่ถูก register ไว้
-  getIt.registerLazySingleton<UserService>(() => UserService(getIt()));
+  getIt.registerLazySingleton<UserService>(() => UserService(getIt<DioClient>()));
 
   // Register AuthProvider (manages authentication state)
-  // AuthProvider ต้องการ AuthService
-  getIt.registerLazySingleton<AuthProvider>(() => AuthProvider(getIt()));
+  // This is registered as LazySingleton because it's a global state manager
+  getIt.registerLazySingleton<AuthProvider>(() => AuthProvider(getIt<AuthService>()));
 
   // Register DashboardProvider (manages dashboard data, e.g., list of users)
-  // DashboardProvider ต้องการ UserService
-  getIt.registerFactory<DashboardProvider>(() => DashboardProvider(getIt()));
-
-  // คุณสามารถเพิ่มการ register สำหรับ service/provider อื่นๆ ได้ที่นี่
+  // This is registered as Factory because each screen might need its own instance
+  getIt.registerFactory<DashboardProvider>(() => DashboardProvider(getIt<UserService>()));
 }

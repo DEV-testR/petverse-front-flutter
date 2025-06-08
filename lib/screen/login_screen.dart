@@ -1,5 +1,3 @@
-// lib/presentation/pages/auth/login_screen.dart
-
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:petverse_front_flutter/screen/pincode_screen.dart';
@@ -7,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../main.dart';
 import '../providers/auth_provider.dart';
-import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,9 +17,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _emailFormatErrorText; // <<< เพิ่มตัวแปร state สำหรับ error รูปแบบอีเมล
-  bool _isLoading = false; // เพิ่ม state สำหรับการแสดง loading
-  bool _showPasswordInput = false; // <<< เพิ่ม State สำหรับการแสดง Password Input
+  String? _emailFormatErrorText;
+  bool _isLoading = false;
+  bool _showPasswordInput = false;
 
   @override
   void dispose() {
@@ -31,32 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /*void _doLogin() async {
-    logger.d('[BEGIN] _doLogin');
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      // ***** เพิ่ม mounted check ที่นี่ *****
-      if (!mounted) return; // ถ้า Widget ไม่อยู่ใน tree แล้ว ไม่ต้องทำอะไรต่อ
-
-      if (success) {
-        // Login สำเร็จแล้ว HomePage (Root widget) จะตรวจจับการเปลี่ยนแปลง
-        // ของ AuthProvider.isAuthenticated และนำทางไปยัง DashboardPage อัตโนมัติ
-      } else {
-        // Login ไม่สำเร็จ แสดงข้อความผิดพลาด
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'เข้าสู่ระบบไม่สำเร็จ')),
-        );
-      }
-    }
-  }*/
-
-  void verifilyEmail() async {
-    logger.d('[BEGIN] verifilyEmail');
+  void _verifyEmail() async { // Renamed for consistency
+    logger.d('[BEGIN] _verifyEmail');
 
     final String enteredEmail = _emailController.text.trim();
     if (!_isEmailValid(enteredEmail)) return;
@@ -88,15 +61,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       logger.d('Email verified. Navigated to PinCodeScreen with: $enteredEmail');
     } else {
-      // _showSnackBar('ไม่พบอีเมลนี้ในระบบ');
       setState(() {
-        _emailFormatErrorText = 'ไม่พบอีเมลนี้ในระบบ';
+        _emailFormatErrorText = 'This email is not found in the system.'; // More user-friendly text
       });
       logger.d('Email not found in system.');
     }
 
     if (errorMessage.isNotEmpty) {
-      _showSnackBar('เกิดข้อผิดพลาดในการตรวจสอบอีเมล: $errorMessage');
+      _showSnackBar('An error occurred during email verification: $errorMessage'); // More descriptive
     }
   }
 
@@ -107,11 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final String enteredPassword = _passwordController.text;
 
     if (!_isEmailValid(enteredEmail, forLogin: true)) return;
-
-    if (!_formKey.currentState!.validate() || _emailFormatErrorText!.isNotEmpty) {
-      logger.d('Form validation failed for password login.');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return; // Re-validate password field
 
     _setLoading(true);
 
@@ -134,19 +102,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (loginSuccess) {
-      Navigator.pushReplacement(
+      /*Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
+      );*/
     } else {
-      _showSnackBar(errorMessage.isNotEmpty ? errorMessage : 'เข้าสู่ระบบไม่สำเร็จ');
+      _showSnackBar(errorMessage.isNotEmpty ? errorMessage : 'Login failed. Please check your credentials.'); // Improved message
     }
   }
 
   bool _isEmailValid(String email, {bool forLogin = false}) {
     if (email.isEmpty) {
       setState(() {
-        _emailFormatErrorText = 'กรุณากรอกอีเมลหรือชื่อผู้ใช้';
+        _emailFormatErrorText = 'Please enter your email or username.';
       });
       return false;
     }
@@ -154,13 +122,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!EmailValidator.validate(email)) {
       logger.d('Email format invalid${forLogin ? ' for password login' : ''}.');
       setState(() {
-        _emailFormatErrorText = 'กรุณากรอกรูปแบบอีเมลที่ถูกต้อง';
+        _emailFormatErrorText = 'Please enter a valid email format.';
       });
       return false;
     }
 
     setState(() {
-      _emailFormatErrorText = '';
+      _emailFormatErrorText = null; // Clear the error if valid
     });
 
     return true;
@@ -173,268 +141,303 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade400, // Consistent error color
+      ),
+    );
+  }
+
+  Widget _buildSocialIconButton({
+    required String iconPath,
+    required Color backgroundColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        // Add a subtle border for iOS-like flat design when background is white
+        border: Border.all(
+          color: Colors.grey.shade300, // Light grey border
+          width: 0.8,
+        ),
+      ),
+      child: IconButton(
+        icon: Image.asset(
+          iconPath,
+          height: 28,
+          width: 28,
+        ),
+        onPressed: _isLoading ? null : onPressed,
+        tooltip: 'Sign in with ${iconPath.split('/').last.split('.').first.replaceAll('-', ' ').toTitleCase()}',
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue, // สีน้ำเงินเข้มตามรูป
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            Row(
+      backgroundColor: Colors.white, // Pure white background for iOS feel
+      body: SafeArea( // Use SafeArea to avoid notch/dynamic island
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0), // Consistent horizontal padding
+          child: SingleChildScrollView(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.pets, // หรือไอคอนที่คล้ายกับโลโก้
-                  color: Colors.white,
-                  size: 40,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Pet_Verse',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 50),
+                const SizedBox(height: 80), // More space from top for iOS feel
 
-            // Sign In text
-            Text(
-              'Sign In',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 30),
-
-            // Email or Username input
-            /*Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Email or Username',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-            SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  hintText: 'example@gmail.com', // ตัวอย่างจากรูป IMG_3985
-                  hintStyle: TextStyle(color: Colors.grey[600]),
-                ),
-                style: TextStyle(color: Colors.black),
-              ),
-            ),
-            SizedBox(height: 50),*/
-            Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Email or Username',
+                // Logo/App Title
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.pets,
+                      color: Colors.blue.shade700, // A strong blue for branding
+                      size: 40,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PetVerse', // Capitalized for app title
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
+                        color: Colors.blue.shade700,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.black),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      // focusedBorder (เมื่อ focus)
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.blue, width: 2.0), // ตัวอย่าง border สีฟ้าเมื่อ focus
-                      ),
-                      // ***** เพิ่ม errorBorder และ focusedErrorBorder ที่นี่ *****
-                      errorBorder: OutlineInputBorder( // เมื่อมี error และไม่ได้ focus
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.redAccent, width: 2.0), // Border สีแดงเมื่อมี error
-                      ),
-                      focusedErrorBorder: OutlineInputBorder( // เมื่อมี error และ focus
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.red, width: 2.5), // Border สีแดงเข้มขึ้นเมื่อมี error และ focus
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      hintText: 'example@gmail.com',
-                      hintStyle: TextStyle(color: Colors.grey[600]),
-                      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 20.0), // ปรับสีข้อความ error
-                      errorText: _emailFormatErrorText, // <<< แสดง error message จาก state
-                    ),
-                    // ***** เพิ่ม onChanged callback ตรงนี้ *****
-                    onChanged: (value) {
-                      // ถ้ามี error รูปแบบอีเมลแสดงอยู่ และผู้ใช้เริ่มพิมพ์
-                      // ให้ล้าง error นั้นทันที
-                      if (_emailFormatErrorText != null) {
-                        setState(() {
-                          _emailFormatErrorText = null;
-                        });
-                      }
-                    },
-                    /*validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'กรุณากรอกอีเมลหรือชื่อผู้ใช้';
-                      }
-
-                      return null; // ไม่มี error
-                    },*/
-                    autovalidateMode: AutovalidateMode.onUserInteraction, // ตรวจสอบเมื่อผู้ใช้พิมพ์
-                    enabled: !_isLoading, // ปิดการใช้งาน input ขณะ loading
-                  ),
-                  // <<< เพิ่ม Password Input ที่นี่ >>>
-                  if (_showPasswordInput) ...[ // แสดงเมื่อ _showPasswordInput เป็น true
-                    const SizedBox(height: 20), // ระยะห่างจาก Email Input
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Password',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true, // ซ่อนข้อความรหัสผ่าน
-                      style: const TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 2.0),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.red, width: 2.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        hintText: 'Enter your password',
-                        hintStyle: TextStyle(color: Colors.grey[600]),
-                        errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 20.0),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'กรุณากรอกรหัสผ่าน';
-                        }
-                        if (value.length < 6) { // กำหนดความยาวขั้นต่ำของรหัสผ่าน (ตัวอย่าง)
-                          return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
-                        }
-                        return null;
-                      },
-                      autovalidateMode: AutovalidateMode.onUserInteraction, // <<< อยู่ตรงนี้
-                      enabled: !_isLoading,
                     ),
                   ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 50),
+                ),
+                const SizedBox(height: 60), // Increased spacing
 
-            // Sign in button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : () {
-                  if (_showPasswordInput) {
-                    _doLoginWithPassword(); // เรียกใช้ Login ด้วย Password
-                  } else {
-                    verifilyEmail(); // เรียกใช้ Verify Email (ไปหน้า PIN)
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue[800],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.blue,
-                    strokeWidth: 2,
-                  ),
-                )
-                    : Text((_showPasswordInput ? 'Sign in' : 'Sign in with your account'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                // "Sign In" text
+                Align(
+                  alignment: Alignment.centerLeft, // Align left
+                  child: Text(
+                    'Sign In',
+                    style: TextStyle(
+                      color: Colors.black87, // Dark text
+                      fontSize: 30, // Larger for prominence
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-            // Sign In with Other Options (ปุ่มสลับโหมด)
-            TextButton(
-              onPressed: _isLoading ? null : () {
-                setState(() {
-                  _showPasswordInput = !_showPasswordInput; // สลับค่า true/false
-                  _emailController.clear();
-                  _passwordController.clear();
-                  _emailFormatErrorText = null;
-                  _formKey.currentState?.reset(); // ล้าง error messages ของ form
-                });
-                logger.d('Toggle login mode. Now show password: $_showPasswordInput');
-              },
-              child: Text(
-                _showPasswordInput ? 'Sign In with PIN' : 'Sign In with Other Option', // ข้อความเปลี่ยนตามโหมด
-                style: TextStyle(
-                  color: _isLoading ? Colors.white38 : Colors.white70,
-                  fontSize: 16,
+                // Email or Username input
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // No explicit label above the input in iOS, hint text is enough
+                      // or use a placeholder in Material if you really need it
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Colors.black),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.grey.shade100, // Very light grey background for input field
+                          hintText: 'Email or Username', // Use hint text as label
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10), // More rounded corners
+                            borderSide: BorderSide.none, // No default border
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.blue, width: 1.5), // Blue border on focus
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.red, width: 2.0),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), // More vertical padding
+                          errorStyle: const TextStyle(color: Colors.red, fontSize: 12.0),
+                          errorText: _emailFormatErrorText,
+                        ),
+                        onChanged: (value) {
+                          if (_emailFormatErrorText != null) {
+                            setState(() {
+                              _emailFormatErrorText = null;
+                            });
+                          }
+                        },
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        enabled: !_isLoading,
+                      ),
+                      if (_showPasswordInput) ...[
+                        const SizedBox(height: 16), // Slightly less spacing for grouped fields
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: const TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.grey.shade100, // Light grey background
+                            hintText: 'Password', // Use hint text as label
+                            hintStyle: TextStyle(color: Colors.grey.shade500),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Colors.red, width: 2.0),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            errorStyle: const TextStyle(color: Colors.red, fontSize: 12.0),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password.';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters.';
+                            }
+                            return null;
+                          },
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          enabled: !_isLoading,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 30),
+
+                // Sign in button
+                SizedBox(
+                  width: double.infinity,
+                  height: 54, // Taller button
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () {
+                      if (_showPasswordInput) {
+                        _doLoginWithPassword();
+                      } else {
+                        _verifyEmail(); // Call the renamed method
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue, // Standard iOS blue for primary button
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12), // More rounded corners for button
+                      ),
+                      elevation: 0, // Flat design, no shadow
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : Text(
+                      (_showPasswordInput ? 'Sign In' : 'Sign In with Account'), // Simplified button text
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600, // Slightly bolder
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Sign In with Other Options (Toggle mode)
+                TextButton(
+                  onPressed: _isLoading ? null : () {
+                    setState(() {
+                      _showPasswordInput = !_showPasswordInput;
+                      _emailController.clear();
+                      _passwordController.clear();
+                      _emailFormatErrorText = null;
+                      _formKey.currentState?.reset();
+                    });
+                    logger.d('Toggle login mode. Now show password: $_showPasswordInput');
+                  },
+                  child: Text(
+                    _showPasswordInput ? 'Sign In with PIN' : 'Sign In with Password',
+                    style: TextStyle(
+                      color: _isLoading ? Colors.blue.shade300 : Colors.blue, // iOS blue
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+
+                // --- Social Login Section ---
+                const SizedBox(height: 30),
+                // Instead of a full divider, use a lighter text label
+                Text(
+                  'Or sign in with',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildSocialIconButton(
+                      iconPath: 'assets/images/google-logo.png', // Ensure this path is correct
+                      backgroundColor: Colors.white,
+                      onPressed: () {
+                        logger.d('Google Sign-in clicked!');
+                        _showSnackBar('Google Sign-in clicked!');
+                        // TODO: Implement Google Sign-in logic
+                      },
+                    ),
+                    _buildSocialIconButton(
+                      iconPath: 'assets/images/facebook-logo.png', // Ensure this path is correct
+                      backgroundColor: Colors.white, // White background for uniformity
+                      onPressed: () {
+                        logger.d('Facebook Sign-in clicked!');
+                        _showSnackBar('Facebook Sign-in clicked!');
+                        // TODO: Implement Facebook Sign-in logic
+                      },
+                    ),
+                    _buildSocialIconButton(
+                      iconPath: 'assets/images/apple-logo.png', // Ensure this path is correct
+                      backgroundColor: Colors.white,
+                      onPressed: () {
+                        logger.d('Apple Sign-in clicked!');
+                        _showSnackBar('Apple Sign-in clicked!');
+                        // TODO: Implement Apple Sign-in logic
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40), // Spacing at the bottom
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+// Helper extension for String to convert to Title Case (optional, for tooltip)
+extension StringCasingExtension on String {
+  String toCapitalized() => length > 0 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : '';
+  String toTitleCase() => replaceAll(RegExp(' +'), ' ').split(' ').map((str) => str.toCapitalized()).join(' ');
 }

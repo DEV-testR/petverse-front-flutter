@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:petverse_front_flutter/screen/login_screen.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart'; // Assuming this imports your logger
 import '../providers/auth_provider.dart';
 import 'dashboard_screen.dart';
 
@@ -17,7 +19,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   String _pinCode = '';
   final int _pinLength = 6;
 
-  void _onNumberTap(String number) async { // <<< เพิ่ม async ที่นี่
+  void _onNumberTap(String number) async {
     setState(() {
       if (_pinCode.length < _pinLength) {
         _pinCode += number;
@@ -27,35 +29,33 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     if (_pinCode.length == _pinLength) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      // ***** mounted check ควรจะอยู่หลัง await *****
-      // แต่ก่อนที่จะเรียก await เราสามารถดึง authProvider มาไว้ก่อนได้
-      // เนื่องจาก Provider.of(context, listen: false) ไม่ได้ใช้ context หลัง async gap โดยตรง
-      // แต่การเรียกเมธอดบน authProvider อาจจะมีการใช้ context ภายหลัง
+      final bool loginSuccess = await authProvider.loginWithPin(widget.email, _pinCode);
 
-      // เรียก login function ของ AuthProvider แบบ asynchronous
-      // และรอผลลัพธ์
-      final bool loginSuccess = await authProvider.loginWithPin(widget.email, _pinCode); // <<< เพิ่ม await และใช้ widget.email
-
-      // ***** เพิ่ม mounted check ที่นี่ เพื่อตรวจสอบว่า widget ยังคงอยู่ใน tree ก่อนใช้ context อีกครั้ง *****
       if (!mounted) {
-        return; // ถ้า Widget ไม่อยู่ใน tree แล้ว ไม่ต้องทำอะไรต่อ
+        logger.d('Widget unmounted after login attempt, stopping further operations.');
+        return;
       }
 
       if (loginSuccess) {
-        // Login สำเร็จแล้ว
-        // HomePage (Root widget) จะตรวจจับการเปลี่ยนแปลง
-        Navigator.pushReplacement(
-          context,
+        logger.d('Login successful. Removing PinCodeScreen from navigator stack.');
+        // Navigator.pop(context); // Pop this screen off the stack
+        /*navigatorKey.currentState!.pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
+              (Route<dynamic> route) => false, // This condition removes all previous routes
+        );*/
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
         );
       } else {
-        // Login ไม่สำเร็จ แสดงข้อความผิดพลาด
-        // (อาจจะต้องล้าง PIN code ในกรณีที่ login ไม่สำเร็จ เพื่อให้ผู้ใช้กรอกใหม่)
         setState(() {
-          _pinCode = ''; // ล้าง PIN
+          _pinCode = ''; // Clear PIN on failure
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? 'เข้าสู่ระบบไม่สำเร็จ')),
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Login failed. Please try again.'),
+            backgroundColor: Colors.red.shade400,
+          ),
         );
       }
     }
@@ -72,21 +72,25 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[800],
+      backgroundColor: Colors.white, // Overall white background
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        backgroundColor: Colors.white, // White AppBar background
+        elevation: 0.5, // Subtle shadow for iOS feel
+        centerTitle: true,
         title: Text(
           widget.email,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(color: Colors.black, fontSize: 18), // Black title text
         ),
-        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.blue), // iOS style back arrow
+          onPressed: () {
+            // Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => LoginScreen()),
+            );
+          },
+        ),
       ),
       body: Column(
         children: [
@@ -97,15 +101,15 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                 const Text(
                   'Enter your PIN code',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87, // Dark grey for primary text
                     fontSize: 20,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'for ${widget.email}',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: Colors.grey.shade600, // Lighter grey for secondary text
                     fontSize: 16,
                   ),
                 ),
@@ -119,8 +123,11 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                       height: 16,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: index < _pinCode.length ? Colors.white : Colors.white54,
-                        border: Border.all(color: Colors.white54),
+                        color: index < _pinCode.length
+                            ? Colors.blue // Filled dot for active PIN
+                            : Colors.grey.shade300, // Light grey for inactive dot
+                        border: Border.all(
+                            color: index < _pinCode.length ? Colors.blue : Colors.grey.shade300),
                       ),
                     );
                   }),
@@ -137,27 +144,27 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 childAspectRatio: 1.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                crossAxisSpacing: 15, // Increased spacing for cleaner look
+                mainAxisSpacing: 15, // Increased spacing for cleaner look
               ),
               itemCount: 12,
               itemBuilder: (context, index) {
                 if (index == 9) {
-                  return Container();
+                  return Container(); // Empty space for button 7-9
                 } else if (index == 11) {
                   return _buildNumberPadButton(
-                    child: const Icon(Icons.backspace, color: Colors.white),
+                    child: Icon(Icons.backspace_outlined, color: Colors.blue.shade700, size: 28), // iOS-like backspace
                     onTap: _onClearTap,
                   );
                 } else if (index == 10) {
                   return _buildNumberPadButton(
-                    child: const Text('0', style: TextStyle(fontSize: 30, color: Colors.white)),
+                    child: const Text('0', style: TextStyle(fontSize: 32, color: Colors.black)), // Black for numbers
                     onTap: () => _onNumberTap('0'),
                   );
                 } else {
                   final number = (index + 1).toString();
                   return _buildNumberPadButton(
-                    child: Text(number, style: const TextStyle(fontSize: 30, color: Colors.white)),
+                    child: Text(number, style: const TextStyle(fontSize: 32, color: Colors.black)), // Black for numbers
                     onTap: () => _onNumberTap(number),
                   );
                 }
@@ -174,8 +181,9 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.blue[700],
+          color: Colors.grey.shade100, // Very light grey for button background
           shape: BoxShape.circle,
+          // No border for a flatter iOS look, rely on background color
         ),
         alignment: Alignment.center,
         child: child,

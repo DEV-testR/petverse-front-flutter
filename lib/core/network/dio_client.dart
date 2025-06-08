@@ -1,25 +1,34 @@
+import 'dart:ui';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../main.dart';
 import 'api_constants.dart';
 
 class DioClient {
   // เปลี่ยนจากการสร้าง Dio instance ภายในคลาส
   // ไปเป็นการรับ Dio instance เข้ามาทาง Constructor
   final Dio _dio;
+  final VoidCallback onAuthError; // Callback for auth errors
 
   // Constructor ที่รับ Dio instance เข้ามา
-  DioClient(this._dio) {
+  DioClient(this._dio, {required this.onAuthError}) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         // แนบ accessToken จาก prefs ทุกครั้ง
+        final path = options.path;
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('accessToken');
+        bool isPathAuth = (path.contains('auth'));
+        logger.d('Path Is Contail Auth $isPathAuth');
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
           // สามารถเพิ่ม print เพื่อ debug ได้
           // print('DioClient Interceptor: Adding Authorization header with token: $token');
-        } else {
+        } else if (!isPathAuth) {
+          logger.d('Call onAuthError');
+          onAuthError();
           // print('DioClient Interceptor: No access token found.');
         }
         return handler.next(options);
@@ -115,6 +124,7 @@ class DioClient {
       // print('DioClient: Refresh token failed. Clearing tokens.');
       await prefs.remove('accessToken');
       await prefs.remove('refreshToken');
+      onAuthError();
     }
 
     return false;

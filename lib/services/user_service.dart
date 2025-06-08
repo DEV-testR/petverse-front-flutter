@@ -13,7 +13,7 @@ class UserService {
 
   /// เมธอดสำหรับดึงรายชื่อผู้ใช้ทั้งหมดจาก API
   /// **เมธอดนี้ควรคืนค่าเป็น List ของผู้ใช้**
-  Future<List<User>> getUsers() async {
+  Future<List<User>> fetchListUsers() async {
     try {
       // เรียก API ที่คืนค่าเป็น List ของผู้ใช้ทั้งหมด
       final response = await _dioClient.get('${ApiConstants.baseUrl}/v1/users/getUsers');
@@ -52,7 +52,7 @@ class UserService {
 
   /// **เมธอดสำหรับดึงข้อมูลโปรไฟล์ผู้ใช้ที่ Login อยู่**
   /// เมธอดนี้จะเรียก API ที่ใช้ accessToken เพื่อดึงข้อมูล user profile ของตัวเอง
-  Future<User> getUserProfile() async {
+  Future<User> fetchUser() async {
     try {
       // เรียก API endpoint สำหรับข้อมูลโปรไฟล์ของผู้ใช้ที่ล็อกอินอยู่
       // ซึ่ง API นี้ควรคืนข้อมูล User object เดียว (Map<String, dynamic>)
