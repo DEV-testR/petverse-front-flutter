@@ -59,6 +59,10 @@ class DashboardProvider extends ChangeNotifier {
     }
   }
 
+  void setUserProfile(User user) {
+    _user = user;
+  }
+
 // คุณสามารถเพิ่มเมธอดอื่นๆ ที่เกี่ยวข้องกับ Dashboard ได้ที่นี่
 // เช่น: refreshUsers(), deleteUser(userId), filterUsers() เป็นต้น
 }

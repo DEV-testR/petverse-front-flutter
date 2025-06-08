@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Import for DateFormat
+import 'package:petverse_front_flutter/screen/login_screen.dart';
 import 'package:petverse_front_flutter/screen/userprofile_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -54,7 +55,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         logger.d('Widget unmounted after API call, stopping further operations.');
         return;
       }
+
       logger.d('Logout successful. main.dart will handle navigation to LoginScreen.');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+      );
     } catch (e) {
       logger.e('Error during logout: $e');
       if (mounted) {

@@ -2,8 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart'; // Ensure Material is imported for certain widgets if needed, though Cupertino is primary
 import 'package:intl/intl.dart';
 import 'package:petverse_front_flutter/main.dart';
+import 'package:provider/provider.dart';
 
 import '../dto/user.dart';
+import '../providers/dashboard_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final User user;
@@ -291,16 +293,16 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    final updatedUserData = {
-      'fullName': _nameController.text.trim(),
-      'username': _usernameController.text.trim(), // Assuming username is email
-      'dateOfBirth': _selectedDateOfBirth?.toIso8601String(),
-      'phoneNumber': _phoneNumberController.text.trim(),
-      'address': _addressController.text.trim(),
-    };
+    User userUpdate = User(email: _usernameController.text.trim()
+        , fullName: _nameController.text.trim()
+        , dateOfBirth: _selectedDateOfBirth
+        , phoneNumber: _phoneNumberController.text.trim()
+        , address: _addressController.text.trim()
+    );
 
-    logger.d('Saving profile with new values: $updatedUserData');
-
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    dashboardProvider.setUserProfile(userUpdate);
+    logger.d('Saving profile with new values: $userUpdate');
     showCupertinoDialog(
       context: context,
       builder: (_) => CupertinoAlertDialog(
@@ -311,7 +313,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
             child: const Text('OK'),
             onPressed: () {
               Navigator.of(context).pop(); // Pop the alert dialog
-              Navigator.of(context).pop(); // Pop EditProfileScreen to go back to UserProfileScreen
+              Navigator.of(context).pop(userUpdate); // Pop EditProfileScreen to go back to UserProfileScreen
             },
           ),
         ],
