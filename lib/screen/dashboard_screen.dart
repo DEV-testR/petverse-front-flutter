@@ -4,11 +4,17 @@ import 'package:petverse_front_flutter/screen/login_screen.dart';
 import 'package:petverse_front_flutter/screen/userprofile_screen.dart';
 import 'package:provider/provider.dart';
 
+
 import '../dto/user.dart';
 import '../main.dart'; // For logger
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../widget/cardaction_widget.dart'; // Assuming CardActionButton is styled iOS-friendly
+import 'dashboard_inbox_content.dart';
+import 'dashboard_feed_content.dart';
+import 'dashboard_more_content.dart';
+import 'dashboard_team_content.dart';
+import 'dashboard_today_content.dart';
+// ไม่จำเป็นต้อง import 'cardaction_widget.dart' ตรงนี้แล้ว ถ้ามันถูกย้ายไปใน dashboard_content.dart
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +24,29 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0; // ตัวแปรสำหรับเก็บ index ของแท็บที่ถูกเลือก
+
+  // รายการของ Widget (หน้าจอ) ที่จะแสดงผลเมื่อแต่ละแท็บถูกเลือก
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    // กำหนดค่าให้กับ _pages ใน initState
+    _pages = [
+      DashboardTodayContent(onRefresh: _fetchDashboardData), // หน้า Today
+      const InboxContentScreen(), // หน้า Inbox/Chat
+      const TeamContentScreen(), // หน้า Team
+      const FeedContentScreen(), // หน้า Feed
+      const MoreContentScreen(), // หน้า More
+    ];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // เรียกข้อมูลสำหรับหน้า Dashboard (Today) เมื่อเริ่มต้น
+      _fetchDashboardData();
+    });
+  }
+
   Future<void> _fetchDashboardData() async {
     logger.d('[DashboardScreen] Fetching dashboard data...');
     if (!mounted) return;
@@ -37,14 +66,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchDashboardData();
-    });
-  }
-
   void logout() async {
     logger.d('[BEGIN] logout');
     try {
@@ -57,7 +78,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       logger.d('Logout successful. main.dart will handle navigation to LoginScreen.');
-      Navigator.push(
+      // ใช้ pushReplacement เพื่อไม่ให้ย้อนกลับมาหน้า Dashboard ได้เมื่อกดปุ่มย้อนกลับ
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => LoginScreen(),
@@ -73,6 +95,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  // ฟังก์ชันนี้จะถูกเรียกเมื่อมีการแตะที่ Bottom Navigation Item
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index; // อัปเดต index ที่ถูกเลือก
+    });
+    logger.d('Bottom navigation item tapped: $index');
+  }
+
   @override
   Widget build(BuildContext context) {
     final dashboardProvider = Provider.of<DashboardProvider>(context);
@@ -82,51 +112,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String currentDayOfWeek = DateFormat('EEEE', 'en').format(DateTime.now());
     final String currentMonthDay = DateFormat('MMMM d', 'en').format(DateTime.now());
 
+    // กำหนดชื่อ Title ของ AppBar ตามหน้าจอที่เลือก
+    String appBarTitle = 'Today';
+    switch (_selectedIndex) {
+      case 0:
+        appBarTitle = 'Today';
+        break;
+      case 1:
+        appBarTitle = 'Inbox';
+        break;
+      case 2:
+        appBarTitle = 'Team';
+        break;
+      case 3:
+        appBarTitle = 'Feed';
+        break;
+      case 4:
+        appBarTitle = 'More';
+        break;
+    }
+
+
     return PopScope(
-      canPop: false,
+      canPop: false, // ป้องกันการ Pop ออกจากหน้าจอ (เช่น กดปุ่ม Back)
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (didPop) {
           return;
         }
         logger.d('Attempted to pop from Dashboard, but blocked by PopScope. Result: $result');
+        // หากผู้ใช้อยู่บนแท็บอื่น (ไม่ใช่ Today) ให้กลับไปที่แท็บ Today
+        if (_selectedIndex != 0) {
+          setState(() {
+            _selectedIndex = 0;
+          });
+        }
+        // ถ้าอยู่บนแท็บ Today แล้วกด back อีกครั้ง จะไม่มีอะไรเกิดขึ้น (เพราะ canPop: false)
+        // คุณสามารถเพิ่ม logic เช่น แสดง dialog "Exit App?" ได้ที่นี่
       },
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50, // Very light grey background like iOS
+        backgroundColor: Colors.grey.shade50, // พื้นหลังสีเทาอ่อนแบบ iOS
         appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white, // White AppBar
-          elevation: 0.5, // Subtle shadow for iOS feel
+          automaticallyImplyLeading: false, // ซ่อนปุ่มย้อนกลับอัตโนมัติ
+          backgroundColor: Colors.white, // AppBar สีขาว
+          elevation: 0.5, // เงาจางๆ แบบ iOS
           title: Row(
             children: [
-              // Icon(Icons.business_center, color: Colors.blue.shade700, size: 28), // Retained, use a modern icon
-              // SizedBox(width: 8),
               Text(
-                'Today',
+                appBarTitle, // เปลี่ยน Title ตามหน้าจอที่เลือก
                 style: TextStyle(
-                  color: Colors.black, // Main title in black
+                  color: Colors.black, // Title หลักสีดำ
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                '$currentDayOfWeek, $currentMonthDay',
-                style: TextStyle(
-                  color: Colors.grey.shade600, // Date in subtle grey
-                  fontSize: 16,
+              if (_selectedIndex == 0) ...[ // แสดงวันที่เฉพาะบนหน้า Today เท่านั้น
+                const SizedBox(width: 8),
+                Text(
+                  '$currentDayOfWeek, $currentMonthDay',
+                  style: TextStyle(
+                    color: Colors.grey.shade600, // วันที่สีเทาอ่อนๆ
+                    fontSize: 16,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           actions: [
-            // Settings/Logout Menu Button
+            // ปุ่มเมนูตั้งค่า/ออกจากระบบ
             PopupMenuButton<String>(
-              icon: Icon(Icons.settings_outlined, color: Colors.blue.shade700), // iOS-like settings icon
+              icon: Icon(Icons.settings_outlined, color: Colors.blue.shade700), // ไอคอนตั้งค่าแบบ iOS
               onSelected: (String result) async {
                 if (result == 'logout') {
                   logout();
                 } else if (result == 'settings') {
                   logger.d('Settings option selected.');
+                  // TODO: เพิ่มการนำทางไปหน้า Settings
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -151,12 +211,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ],
-              offset: const Offset(0, 50),
+              offset: const Offset(0, 50), // เลื่อนเมนูลงมาเล็กน้อย
               color: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // More rounded
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // ขอบมนขึ้น
               elevation: 4,
             ),
-            // User Profile Avatar
+            // รูปโปรไฟล์ผู้ใช้
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: GestureDetector(
@@ -178,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  backgroundColor: Colors.blue.shade100, // Lighter blue for avatar background
+                  backgroundColor: Colors.blue.shade100, // พื้นหลังอวตารสีฟ้าอ่อน
                   child: userProfilePicUrl != null && userProfilePicUrl.isNotEmpty
                       ? ClipOval(
                     child: Image.network(
@@ -198,103 +258,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: _fetchDashboardData,
-          color: Colors.blue, // iOS-like blue for refresh indicator
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Announcement Card
-                _buildDashboardCard(
-                  icon: Icons.announcement,
-                  title: 'Announcements', // Plural for common usage
-                  content: 'No recent announcements',
-                  showViewAll: true,
-                ),
-                const SizedBox(height: 16), // Consistent spacing
-
-                // Qbic Card (assuming this is a task/todo)
-                _buildDashboardCard(
-                  icon: Icons.checklist,
-                  title: 'Tasks', // More general term
-                  content: 'No pending tasks', // More active description
-                  showViewAll: true,
-                ),
-                const SizedBox(height: 16),
-
-                // Meet Card
-                _buildDashboardCard(
-                  icon: Icons.group,
-                  title: 'Meetings',
-                  content: 'No upcoming meetings',
-                  buttons: [
-                    CardActionButton(text: '+ Join', color: Colors.blue.shade700), // iOS blue for action
-                    CardActionButton(text: '+ Create New', color: Colors.blue.shade700),
-                  ],
-                  showViewAll: true,
-                ),
-                const SizedBox(height: 16),
-
-                // Webinar Card
-                _buildDashboardCard(
-                  icon: Icons.monitor_outlined, // A bit more modern icon
-                  title: 'Webinars',
-                  content: 'No upcoming webinars',
-                  buttons: [
-                    CardActionButton(text: '+ Create New', color: Colors.blue.shade700),
-                  ],
-                  showViewAll: true,
-                ),
-                const SizedBox(height: 30), // More spacing before the last button
-
-                // Reorder Button
-                SizedBox(
-                  width: double.infinity, // Full width button
-                  child: ElevatedButton(
-                    onPressed: () {
-                      logger.d('Reorder button tapped!');
-                      // TODO: Implement reorder logic
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white, // White background for secondary button
-                      foregroundColor: Colors.blue.shade700, // Blue text
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10), // Rounded corners
-                        side: BorderSide(color: Colors.blue.shade200, width: 1), // Subtle border
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14), // Taller button
-                      elevation: 0, // Flat design
-                    ),
-                    child: const Text(
-                      'Reorder Dashboard', // More descriptive text
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        body: IndexedStack(
+          index: _selectedIndex, // แสดงหน้าจอตาม index ที่เลือก
+          children: _pages, // รายการของหน้าจอทั้งหมด
         ),
         bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed, // Fixed type for all items
-          backgroundColor: Colors.white, // White background
-          selectedItemColor: Colors.blue, // iOS blue for selected item
-          unselectedItemColor: Colors.grey.shade600, // Darker grey for unselected
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600), // Bolder label
+          type: BottomNavigationBarType.fixed, // สำหรับ 5 รายการควรใช้ fixed
+          backgroundColor: Colors.white, // พื้นหลังสีขาว
+          selectedItemColor: Colors.blue, // สีน้ำเงินสำหรับไอเท็มที่เลือก
+          unselectedItemColor: Colors.grey.shade600, // สีเทาเข้มสำหรับไอเท็มที่ไม่ได้เลือก
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600), // ป้ายกำกับตัวหนาขึ้นเมื่อเลือก
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
-          showUnselectedLabels: true, // Always show labels
+          showUnselectedLabels: true, // แสดงป้ายกำกับเสมอ
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: Icon(Icons.star_outlined), // Outlined icon for non-selected
-              activeIcon: Icon(Icons.star), // Filled icon for selected
+              icon: Icon(Icons.star_outlined), // ไอคอนโปร่งสำหรับไม่ได้เลือก
+              activeIcon: Icon(Icons.star), // ไอคอนทึบสำหรับเลือก
               label: 'Today',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_outlined),
               activeIcon: Icon(Icons.chat),
-              label: 'Inbox', // More common iOS term
+              label: 'Inbox', // ใช้คำว่า Inbox
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.group_outlined),
@@ -307,131 +292,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Feed',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.more_horiz), // Standard more icon
+              icon: Icon(Icons.more_horiz), // ไอคอน "เพิ่มเติม"
               label: 'More',
             ),
           ],
-          currentIndex: 0,
-          onTap: (index) {
-            // Handle navigation
-            logger.d('Bottom navigation item tapped: $index');
-          },
+          currentIndex: _selectedIndex, // ตั้งค่า index ปัจจุบัน
+          onTap: _onItemTapped, // Callback เมื่อมีการแตะรายการ
         ),
       ),
     );
   }
-
-  // Helper method to build a dashboard card with iOS-like styling
-  Widget _buildDashboardCard({
-    required IconData icon,
-    required String title,
-    required String content,
-    List<Widget>? buttons,
-    bool showViewAll = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white, // Card background white
-        borderRadius: BorderRadius.circular(12), // Rounded corners
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(26), // Subtle shadow
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.blue.shade700, size: 28), // Icon in blue
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              if (showViewAll)
-                GestureDetector(
-                  onTap: () {
-                    logger.d('View All tapped for $title');
-                    // TODO: Navigate to relevant list view
-                  },
-                  child: Text(
-                    'View All',
-                    style: TextStyle(
-                      color: Colors.blue.shade700, // iOS blue for "View All"
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            content,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600, // Content in grey
-            ),
-          ),
-          if (buttons != null && buttons.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end, // Align buttons to the right
-              children: buttons.map((button) {
-                return Expanded( // <-- Add Expanded here if you want the buttons to fill available space
-                  child: Padding( // Padding is now inside Expanded
-                    padding: const EdgeInsets.only(left: 8.0), // Spacing between buttons
-                    child: button, // This `button` is now the ElevatedButton from CardActionButton
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }
-
-// Ensure your AppCard and CardActionButton widgets are also styled for iOS
-// For AppCard, you might want to remove its internal box decoration if this _buildDashboardCard wraps it.
-// Or, _buildDashboardCard can directly replace the AppCard usage.
-// Assuming AppCard is now handled by _buildDashboardCard properties for iOS styling.
-
-// Example of how CardActionButton could be styled for iOS:
-// class CardActionButton extends StatelessWidget {
-//   final String text;
-//   final Color color; // This color will be ignored, iOS buttons are mostly blue or system red/green
-//
-//   const CardActionButton({super.key, required this.text, required this.color});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return TextButton(
-//       onPressed: () { /* Handle action */ },
-//       style: TextButton.styleFrom(
-//         foregroundColor: Colors.blue.shade700, // Standard iOS blue for action buttons
-//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8), // Subtle rounding
-//           side: BorderSide(color: Colors.blue.shade200, width: 1), // Light blue border
-//         ),
-//         minimumSize: Size.zero, // Compact button
-//         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-//       ),
-//       child: Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-//     );
-//   }
-// }

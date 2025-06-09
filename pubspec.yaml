@@ -15,8 +15,9 @@ dependencies:
   shared_preferences: ^2.5.3
   cupertino_icons: ^1.0.8
   logger: ^2.5.0
-  email_validator: ^2.1.17 # เพิ่มบรรทัดนี้ หรือเวอร์ชันล่าสุดที่คุณต้องการ
-  intl: ^0.19.0 # ใช้เวอร์ชันล่าสุด (ณ ตอนนี้ 0.19.0)
+  email_validator: ^2.1.17
+  intl: ^0.19.0
+  font_awesome_flutter: ^10.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
