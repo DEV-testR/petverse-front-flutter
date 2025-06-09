@@ -292,8 +292,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Today',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.email_outlined),
-              activeIcon: Icon(Icons.email),
+              icon: Icon(Icons.chat_outlined),
+              activeIcon: Icon(Icons.chat),
               label: 'Inbox', // More common iOS term
             ),
             BottomNavigationBarItem(
