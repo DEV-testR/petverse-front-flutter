@@ -141,9 +141,9 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('accessToken'); // ลบ Token ออกจาก SharedPreferences
       await prefs.remove('refreshToken');
-      logger.d('User logged out.');
+      debugPrint('User logged out.');
     } catch (e) {
-      logger.d('Logout Error: $e');
+      debugPrint('Logout Error: $e');
       _errorMessage = 'Failed to log out.';
     } finally {
       _isLoading = false;
