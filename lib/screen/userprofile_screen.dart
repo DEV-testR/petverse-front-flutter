@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:petverse_front_flutter/main.dart';
 
 import '../dto/user.dart';
+import '../main.dart';
 import '../widget/form_clickablerow_widget.dart';
 import '../widget/formsection_container_widget.dart';
 import 'editprofile_screen.dart';
@@ -33,6 +33,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       ),
     );
 
+    logger.d('update !!');
     if (updatedUser != null) {
       setState(() {
         _user = updatedUser;
@@ -42,7 +43,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    logger.d('[UserProfileScreen] Building with User: ${_user.email}');
+    // logger.d('[UserProfileScreen] Building with User: ${_user.email}');
 
     return Scaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
@@ -100,7 +101,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           height: 120,
           fit: BoxFit.cover,
           errorBuilder: (_, error, _) {
-            logger.e('Failed to load profile picture: $error');
+            // logger.e('Failed to load profile picture: $error');
             return Icon(Icons.person, size: 80, color: Colors.blue.shade700);
           },
         ),

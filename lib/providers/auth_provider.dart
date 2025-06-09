@@ -12,7 +12,7 @@ class AuthProvider extends ChangeNotifier {
   AuthResponse? _authResponse;
   bool _isLoading = false;
   String? _errorMessage;
-  String _email = '';
+  String? _email;
 
   AuthResponse? get loggedInUser => _authResponse;
   bool get isLoading => _isLoading;

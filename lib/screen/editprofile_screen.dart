@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart'; // Ensure Material is imported for certain widgets if needed, though Cupertino is primary
-import 'package:intl/intl.dart';
-import 'package:petverse_front_flutter/main.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart'; // Ensure Material is imported if needed for other widgets
+import 'package:intl/intl.dart'; // Keep if you use for date formatting
+import 'package:provider/provider.dart'; // Keep if you use Provider
 
+// สมมติว่ามี DTO และ Provider ที่เกี่ยวข้อง
 import '../dto/user.dart';
+import '../main.dart';
 import '../providers/dashboard_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class EditProfileScreenState extends State<EditProfileScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>(); // Uncomment if you decide to use a traditional Form widget
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
@@ -29,7 +30,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     final user = widget.user;
     _nameController.text = user.fullName ?? '';
-    _usernameController.text = user.email; // Username is often email or a unique identifier
+    _usernameController.text = user.email;
     _phoneNumberController.text = user.phoneNumber ?? '';
     _addressController.text = user.address ?? '';
     _selectedDateOfBirth = user.dateOfBirth;
@@ -60,8 +61,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 20),
             _buildContactInfoSection(),
             const SizedBox(height: 20),
-            /*_buildAccountActionSection(),
-            const SizedBox(height: 30),*/
           ],
         ),
       ),
@@ -101,7 +100,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                   width: 120,
                   height: 120,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, error, _) {
+                  errorBuilder: (_, error, _) { // Adjusted errorBuilder signature
                     logger.e('Error loading edit profile pic: $error');
                     return const Icon(CupertinoIcons.person_alt_circle_fill, size: 60);
                   },
@@ -127,43 +126,21 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     return CupertinoFormSection.insetGrouped(
       header: const Text('PROFILE INFORMATION'),
       children: [
-        _buildCupertinoTextFieldRow(
+        _buildCustomTextFieldRow(
+          context: context,
           labelText: 'Name',
           controller: _nameController,
           placeholder: 'Enter your name',
         ),
-        _buildCupertinoTextFieldRow(
+        _buildCustomTextFieldRow(
+          context: context,
           labelText: 'Username',
           controller: _usernameController,
           placeholder: 'petverse@example.com',
           readOnly: true,
         ),
-        // ✅ Wrap Date of Birth with GestureDetector
-        CupertinoFormRow(
-          prefix: const Text('Date of Birth', style: TextStyle(color: CupertinoColors.black)),
-          child: GestureDetector(
-            onTap: () => _showDatePicker(context),
-            child: AbsorbPointer(
-              child: CupertinoTextField(
-                controller: TextEditingController(
-                  text: _selectedDateOfBirth != null
-                      ? DateFormat('dd MMMM yyyy', 'th').format(_selectedDateOfBirth!)
-                      : '',
-                ),
-                placeholder: 'Select date of birth',
-                readOnly: true,
-                cursorColor: CupertinoColors.activeBlue,
-                style: const TextStyle(color: CupertinoColors.black),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
-                textAlignVertical: TextAlignVertical.center,
-              ),
-            ),
-          ),
-        ),
+        // ใช้ _buildCustomDateFieldRow ที่ปรับปรุงแล้ว
+        _buildCustomDateFieldRow(context),
       ],
     );
   }
@@ -172,68 +149,60 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     return CupertinoFormSection.insetGrouped(
       header: const Text('CONTACT INFORMATION'),
       children: [
-        _buildCupertinoTextFieldRow(
+        _buildCustomTextFieldRow(
+          context: context,
           labelText: 'Phone',
           controller: _phoneNumberController,
           placeholder: 'Enter your phone number',
           keyboardType: TextInputType.phone,
         ),
-        _buildCupertinoTextFieldRow(
+        _buildCustomTextFieldRow(
+          context: context,
           labelText: 'Address',
           controller: _addressController,
           placeholder: 'Enter your address',
-          maxLines: null, // ให้ขยายอัตโนมัติ
+          maxLines: null,
           keyboardType: TextInputType.multiline,
-          alignLabelWithHint: true,
+          alignLabelWithTop: true,
         ),
       ],
     );
   }
 
-  /*Widget _buildAccountActionSection() {
-    return CupertinoFormSection.insetGrouped(
-      // header: const Text('ACCOUNT ACTIONS'), // Optional header
-      children: [
-        CupertinoFormRow(
-          padding: EdgeInsets.zero,
-          child: FormClickableRow(
-            label: 'Change Password',
-            onTap: () {
-              logger.d('Change Password tapped');
-              // TODO: Navigate to ChangePasswordScreen
-            },
-            textColor: CupertinoColors.activeBlue,
-            showForwardIcon: true, // Changed to true for standard navigation
-            fontWeight: FontWeight.normal, // Typically normal for actions
-          ),
-        ),
-        CupertinoFormRow(
-          padding: EdgeInsets.zero,
-          child: FormClickableRow(
-            label: 'Delete Account',
-            onTap: () {
-              _showDeleteAccountConfirmation(context);
-            },
-            textColor: CupertinoColors.systemRed,
-            showForwardIcon: false, // No forward arrow for destructive action
-            fontWeight: FontWeight.normal, // Typically normal for actions
-          ),
-        ),
-      ],
-    );
-  }*/
-
-  Widget _buildCupertinoTextFieldRow({
+  // --- ฟังก์ชัน _buildCustomTextFieldRow ที่ปรับใช้ CupertinoFormRow ---
+  Widget _buildCustomTextFieldRow({
+    required BuildContext context,
     required String labelText,
     required TextEditingController controller,
     String? placeholder,
     int? maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     bool readOnly = false,
-    bool alignLabelWithHint = true, // Added parameter for label alignment
+    bool alignLabelWithTop = true,
+    double labelWidthRatio = 0.33, // อัตราส่วนสำหรับความกว้างของ label
   }) {
+    final int resolvedMaxLines = maxLines ?? 1;
+
     return CupertinoFormRow(
-      prefix: Text(labelText, style: const TextStyle(color: CupertinoColors.black)),
+      // prefix จะเป็นตัว label
+      prefix: SizedBox(
+        width: MediaQuery.of(context).size.width * labelWidthRatio,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10.0), // ปรับให้ label กลางแนวตั้งกับ input
+          child: DefaultTextStyle( // บังคับให้ label ไม่เป็นตัวหนา
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              color: Colors.black87,
+            ),
+            child: Text(
+              labelText,
+              textAlign: TextAlign.start,
+            ),
+          ),
+        ),
+      ),
+      // child คือส่วน input
       child: CupertinoTextField(
         controller: controller,
         placeholder: placeholder,
@@ -241,18 +210,63 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         keyboardType: keyboardType,
         cursorColor: CupertinoColors.activeBlue,
         style: const TextStyle(color: CupertinoColors.black),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration( // ไม่มี border
           color: CupertinoColors.white,
-          borderRadius: BorderRadius.circular(8),
-        ), // Remove default decoration if any
-        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
         readOnly: readOnly,
-        // Apply vertical alignment for multiline text fields if alignLabelWithHint is true
-        // This makes the prefix align with the first line of the multiline text field.
-        textAlignVertical: alignLabelWithHint ? TextAlignVertical.top : TextAlignVertical.center,
+        textAlignVertical: alignLabelWithTop && resolvedMaxLines > 1 ? TextAlignVertical.top : TextAlignVertical.center,
       ),
     );
   }
+  // --- สิ้นสุดฟังก์ชัน _buildCustomTextFieldRow ที่ปรับใช้ CupertinoFormRow ---
+
+  // --- ฟังก์ชัน _buildCustomDateFieldRow ที่ปรับใช้ CupertinoFormRow ---
+  Widget _buildCustomDateFieldRow(BuildContext context) {
+    final TextEditingController dateController = TextEditingController(
+      text: _selectedDateOfBirth != null
+          ? DateFormat('dd MMMM', 'th').format(_selectedDateOfBirth!) // ใช้ 'th' locale
+          : '',
+    );
+
+    return CupertinoFormRow(
+      prefix: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.33, // ใช้อัตราส่วนเดียวกับ TextField อื่นๆ
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10.0),
+          child: DefaultTextStyle(
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              color: Colors.black87,
+            ),
+            child: const Text(
+              'Date of Birth',
+              textAlign: TextAlign.start,
+            ),
+          ),
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () => _showDatePicker(context),
+        child: AbsorbPointer(
+          child: CupertinoTextField(
+            controller: dateController,
+            placeholder: 'Select date of birth',
+            readOnly: true,
+            cursorColor: CupertinoColors.activeBlue,
+            style: const TextStyle(color: CupertinoColors.black),
+            decoration: const BoxDecoration( // ไม่มี border
+              color: CupertinoColors.white,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+            textAlignVertical: TextAlignVertical.center,
+          ),
+        ),
+      ),
+    );
+  }
+  // --- สิ้นสุดฟังก์ชัน _buildCustomDateFieldRow ที่ปรับใช้ CupertinoFormRow ---
 
   void _showDatePicker(BuildContext context) {
     DateTime tempPickedDate = _selectedDateOfBirth ?? DateTime.now();
@@ -287,7 +301,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _saveProfile() {
-    // You might want to add more robust validation here, e.g., for phone format, address length.
     if (_nameController.text.trim().isEmpty) {
       _showErrorDialog('Name cannot be empty.');
       return;
@@ -312,8 +325,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
           CupertinoDialogAction(
             child: const Text('OK'),
             onPressed: () {
-              Navigator.of(context).pop(); // Pop the alert dialog
-              Navigator.of(context).pop(userUpdate); // Pop EditProfileScreen to go back to UserProfileScreen
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(userUpdate);
             },
           ),
         ],
@@ -336,30 +349,4 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
-
-  /*void _showDeleteAccountConfirmation(BuildContext context) {
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (_) => CupertinoActionSheet(
-        title: const Text('Delete Account'),
-        message: const Text('Are you sure you want to delete your account? This action cannot be undone.'),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              logger.d('Delete account confirmed');
-              // TODO: Implement actual account deletion logic
-              Navigator.of(context).pop(); // Dismiss the action sheet
-            },
-            child: const Text('Delete Account'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDefaultAction: true,
-          onPressed: () => Navigator.of(context).pop(), // Dismiss the action sheet
-          child: const Text('Cancel'),
-        ),
-      ),
-    );
-  }*/
 }

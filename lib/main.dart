@@ -5,7 +5,6 @@ import 'package:logger/logger.dart';
 import 'package:petverse_front_flutter/screen/pincode_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
@@ -27,25 +26,7 @@ void main() async {
   // Register SharedPreferences once
   final sharedPreferences = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(sharedPreferences);
-
-  setupLocator(
-    onAuthError: () async {
-      logger.e('[Auth Error] Triggering AuthProvider to clear response.');
-      final email = getIt<SharedPreferences>().getString('email') ?? '';
-
-      final navState = navigatorKey.currentState;
-      if (navState != null) {
-        navState.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => PinCodeScreen(email: email),
-          ),
-              (_) => false,
-        );
-      } else {
-        logger.e('Navigator state context is null. Cannot navigate.');
-      }
-    },
-  );
+  setupLocator(onAuthError: callBackOnAuthError);
 
   runApp(
     MultiProvider(
@@ -56,4 +37,21 @@ void main() async {
       child: const PetVerseApp(),
     ),
   );
+}
+
+void callBackOnAuthError() async {
+  logger.e('[Auth Error] Triggering AuthProvider to clear response.');
+  final email = getIt<SharedPreferences>().getString('email') ?? '';
+
+  final navState = navigatorKey.currentState;
+  if (navState != null) {
+    navState.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => PinCodeScreen(email: email),
+      ),
+          (_) => false,
+    );
+  } else {
+    logger.e('Navigator state context is null. Cannot navigate.');
+  }
 }
