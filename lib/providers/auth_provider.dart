@@ -133,24 +133,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> logoutxx() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      // _authResponse = null; // เคลียร์ข้อมูลผู้ใช้
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('accessToken'); // ลบ Token ออกจาก SharedPreferences
-      await prefs.remove('refreshToken');
-      debugPrint('User logged out.');
-    } catch (e) {
-      debugPrint('Logout Error: $e');
-      _errorMessage = 'Failed to log out.';
-    } finally {
-      _isLoading = false;
-      notifyListeners(); // แจ้งเตือน UI ว่าโหลดเสร็จสิ้น
-    }
-  }
-
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
@@ -159,9 +141,9 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('accessToken'); // ลบ Token ออกจาก SharedPreferences
       await prefs.remove('refreshToken');
-      debugPrint('User logged out.');
+      logger.d('User logged out.');
     } catch (e) {
-      debugPrint('Logout Error: $e');
+      logger.d('Logout Error: $e');
       _errorMessage = 'Failed to log out.';
     } finally {
       _isLoading = false;
